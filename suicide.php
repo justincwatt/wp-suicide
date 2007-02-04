@@ -7,6 +7,9 @@ Description: Delete all content from your blog (by table). Goto to Manage &gt; S
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
 
+1.1
+updated for WordPress 2.1 (linkcategories table renamed link2cat)
+
 1.0
 initial version
 
@@ -80,10 +83,10 @@ function manage_suicide()
             print "<p>$wpdb->links deleted.</p>";
         }
         
-        if (isset($_POST['delete_linkcategories']))
+        if (isset($_POST['delete_link2cat']))
         {
-            $wpdb->query("TRUNCATE TABLE $wpdb->linkcategories");   
-            print "<p>$wpdb->linkcategories deleted.</p>";
+            $wpdb->query("TRUNCATE TABLE $wpdb->link2cat");   
+            print "<p>$wpdb->link2cat deleted.</p>";
         }
         
         if (isset($_POST['delete_postmeta']))
@@ -131,7 +134,7 @@ function manage_suicide()
         <ul style="list-style-type:none;">
         <li><input type="checkbox" name="delete_categories"     id="delete_categories"     checked="checked" /> <label for="delete_categories"><?php print $wpdb->categories; ?></label></li>
         <li><input type="checkbox" name="delete_links"          id="delete_links"          checked="checked" /> <label for="delete_links"><?php print $wpdb->links; ?></label></li>
-        <li><input type="checkbox" name="delete_linkcategories" id="delete_linkcategories" checked="checked" /> <label for="delete_linkcategories"><?php print $wpdb->linkcategories; ?></label></li>
+        <li><input type="checkbox" name="delete_link2cat"       id="delete_link2cat"       checked="checked" /> <label for="delete_link2cat"><?php print $wpdb->link2cat; ?></label></li>
         </ul>
 
         <p>By sparing the data in the following tables, you will be left with a functional, though empty WordPress install:</p>
