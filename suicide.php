@@ -1,11 +1,14 @@
 <?php
 /*
 Plugin Name: WordPress Suicide
-Version: 1.2
+Version: 1.3
 Plugin URI: http://justinsomnia.org/2006/04/wordpress-suicide/
-Description: Delete all content from your blog's database (by table). Goto to Manage &gt; Suicide to operate.
+Description: Delete all content from your blog's database (by table). Goto <a href="edit.php?page=wp-suicide.php">Manage &gt; Suicide</a> to operate.
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
+
+1.3
+deactivate wp-suicide after running (thanks Steven!)
 
 1.2
 updated for WordPress 2.3 (post2cat and link2cat became wp_term_relationships, and categories became terms and term_taxonmy)
@@ -105,10 +108,19 @@ function commit_suicide()
         $wpdb->query("TRUNCATE TABLE $wpdb->options");
         print "<p>$wpdb->options deleted.</p>";
     }
+    
+    // deactivate plugin for safety's sake (borrowed from wp-admin/plugins.php)
+		$current = get_option('active_plugins');
+		if (in_array(basename(__FILE__), $current)) {
+		    array_splice($current, array_search(basename(__FILE__), $current), 1); // Array-fu!
+		    update_option('active_plugins', $current);
+		    print "<p><strong>Note:</strong> For your safety (and the safety of others around you), the WordPress Suicide plugin has been deactivated. However, you can reactivate it from the <a href='plugins.php'>Plugins</a> interface if you'd like to commit suicide again.</p>";
+		}
   
   } else { 
-    
+
     ?>
+    
     <form name='suicide' action='' method='post'>
     <p><strong style="color:red;">Warning:</strong> By clicking <button type='submit' name='function' value='commit suicide' onclick='return confirm("For the love of God, are you sure?");'>Yes</button> all the data in the database tables checked below will be deleted.</p>
 
