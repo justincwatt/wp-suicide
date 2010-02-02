@@ -1,11 +1,14 @@
 <?php
 /*
 Plugin Name: WordPress Suicide
-Version: 1.3
+Version: 1.4
 Plugin URI: http://justinsomnia.org/2006/04/wordpress-suicide/
-Description: Delete all content from your blog's database (by table). Goto <a href="edit.php?page=wp-suicide.php">Manage &gt; Suicide</a> to operate.
+Description: Delete all content from your blog's database (by table). Goto <a href="tools.php?page=wp-suicide.php">Tools &gt; Suicide</a> to operate.
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
+
+1.4
+updated for WordPress 2.9 (wp_commentmeta table added)
 
 1.3
 deactivate wp-suicide after running (thanks Steven!)
@@ -44,7 +47,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 function manage_suicide() {
   // Add a new menu under Manage:
-  add_management_page('Suicide', 'Suicide', 10, __FILE__, 'commit_suicide');
+  add_management_page('Suicide', 'Suicide', 'administrator', __FILE__, 'commit_suicide');
 }
 
 function commit_suicide() 
@@ -68,7 +71,12 @@ function commit_suicide()
         $wpdb->query("TRUNCATE TABLE $wpdb->comments");         
         print "<p>$wpdb->comments deleted.</p>";
     }    
- 
+
+    if (isset($_POST['delete_commentmeta'])) {
+        $wpdb->query("TRUNCATE TABLE $wpdb->commentmeta");         
+        print "<p>$wpdb->commentmeta deleted.</p>";
+    }     
+
     if (isset($_POST['delete_links'])) {
         $wpdb->query("TRUNCATE TABLE $wpdb->links");            
         print "<p>$wpdb->links deleted.</p>";
@@ -127,6 +135,7 @@ function commit_suicide()
     <ul style="list-style-type:none;">
     <li><input type="checkbox" name="delete_posts"              id="delete_posts"              checked="checked" /> <label for="delete_posts"><?php print $wpdb->posts; ?></label></li>
     <li><input type="checkbox" name="delete_comments"           id="delete_comments"           checked="checked" /> <label for="delete_comments"><?php print $wpdb->comments; ?></label></li>
+    <li><input type="checkbox" name="delete_commentmeta"        id="delete_commentmeta"        checked="checked" /> <label for="delete_commentmeta"><?php print $wpdb->commentmeta; ?></label></li>    
     <li><input type="checkbox" name="delete_links"              id="delete_links"              checked="checked" /> <label for="delete_links"><?php print $wpdb->links; ?></label></li>
     <li><input type="checkbox" name="delete_postmeta"           id="delete_postmeta"           checked="checked" /> <label for="delete_postmeta"><?php print $wpdb->postmeta;?> (custom fields)</label></li>
     <li><input type="checkbox" name="delete_term_relationships" id="delete_term_relationships" checked="checked" /> <label for="delete_term_relationships"><?php print $wpdb->term_relationships; ?></label></li>
