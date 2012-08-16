@@ -1,11 +1,14 @@
 <?php
 /*
-Plugin Name: WordPress Suicide
-Version: 1.4
+Plugin Name: Suicide
+Version: 1.5
 Plugin URI: http://justinsomnia.org/2006/04/wordpress-suicide/
-Description: Delete all content from your blog's database (by table). Goto <a href="tools.php?page=wp-suicide.php">Tools &gt; Suicide</a> to operate.
+Description: Delete all content from your blog's database (by table). Goto <a href="tools.php?page=suicide.php">Tools &gt; Suicide</a> to operate.
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
+
+1.5
+Add wp_nonce_field check, minor code cleanup
 
 1.4
 updated for WordPress 2.9 (wp_commentmeta table added)
@@ -25,7 +28,7 @@ initial version
 LICENSE
 
 wp-suicide.php
-Copyright (C) 2007 Justin Watt
+Copyright (C) 2012 Justin Watt
 justincwatt@gmail.com
 http://justinsomnia.org/
 
@@ -46,91 +49,61 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 function manage_suicide() {
-  // Add a new menu under Manage:
-  add_management_page('Suicide', 'Suicide', 'administrator', __FILE__, 'commit_suicide');
+  // Add a new menu under Tools:
+  add_management_page('Suicide', 'Suicide', 'manage_options', __FILE__, 'commit_suicide');
 }
+add_action('admin_menu', 'manage_suicide');
 
 function commit_suicide() 
 {
+  if (!empty($_POST)) {
+    check_admin_referer('commit-suicide');
+  }
+
   global $wpdb;
+  $tables = array(
+    'posts',
+    'comments',
+    'commentmeta',
+    'links',
+    'postmeta',
+    'term_relationships',
+    'terms',
+    'term_taxonomy',
+    'users',
+    'usermeta',
+    'options'
+  );
 
   print "<div class='wrap'>";
   print "<h2>Commit Suicide?</h2>";
-
 
   if ($_POST['function'] == 'commit suicide') {
 
     print "<p><strong>Progress:</strong></p>";
 
-    if (isset($_POST['delete_posts'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->posts");
-        print "<p>$wpdb->posts deleted.</p>";
-    }
-
-    if (isset($_POST['delete_comments'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->comments");         
-        print "<p>$wpdb->comments deleted.</p>";
-    }    
-
-    if (isset($_POST['delete_commentmeta'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->commentmeta");         
-        print "<p>$wpdb->commentmeta deleted.</p>";
-    }     
-
-    if (isset($_POST['delete_links'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->links");            
-        print "<p>$wpdb->links deleted.</p>";
-    }
-
-    if (isset($_POST['delete_postmeta'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->postmeta");
-        print "<p>$wpdb->postmeta deleted.</p>";
-    }
-
-    if (isset($_POST['delete_term_relationships'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->term_relationships");         
-        print "<p>$wpdb->term_relationships deleted.</p>";
-    }
-
-    if (isset($_POST['delete_terms'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->terms");       
-        print "<p>$wpdb->terms deleted.</p>";
-    }
-    
-    if (isset($_POST['delete_term_taxonomy'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->term_taxonomy");         
-        print "<p>$wpdb->term_taxonomy deleted.</p>";
-    }    
-    
-    if (isset($_POST['delete_users'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->users");
-        print "<p>$wpdb->users deleted.</p>";
-    }
-    
-    if (isset($_POST['delete_usermeta'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->usermeta");
-        print "<p>$wpdb->usermeta deleted.</p>";
-    }
-    
-    if (isset($_POST['delete_options'])) {
-        $wpdb->query("TRUNCATE TABLE $wpdb->options");
-        print "<p>$wpdb->options deleted.</p>";
+    foreach ($tables as $table) {
+      if (isset($_POST["delete_$table"])) {
+        $wpdb->query("TRUNCATE TABLE {$wpdb->$table}");
+        print "<p>{$wpdb->$table} deleted.</p>";
+      }
     }
     
     // deactivate plugin for safety's sake (borrowed from wp-admin/plugins.php)
-		$current = get_option('active_plugins');
-		if (in_array(basename(__FILE__), $current)) {
-		    array_splice($current, array_search(basename(__FILE__), $current), 1); // Array-fu!
-		    update_option('active_plugins', $current);
-		    print "<p><strong>Note:</strong> For your safety (and the safety of others around you), the WordPress Suicide plugin has been deactivated. However, you can reactivate it from the <a href='plugins.php'>Plugins</a> interface if you'd like to commit suicide again.</p>";
-		}
+    $current = get_option('active_plugins');
+    if (in_array(basename(__FILE__), $current)) {
+      array_splice($current, array_search(basename(__FILE__), $current), 1); // Array-fu!
+      update_option('active_plugins', $current);
+      print "<p><strong>Note:</strong> For your safety (and the safety of others around you), the Suicide plugin has been deactivated. However, you can reactivate it from the <a href='plugins.php'>Plugins</a> interface if you'd like to commit suicide again.</p>";
+    }
   
   } else { 
 
     ?>
     
-    <form name='suicide' action='' method='post'>
-    <p><strong style="color:red;">Warning:</strong> By clicking <button type='submit' name='function' value='commit suicide' onclick='return confirm("For the love of God, are you sure?");'>Yes</button> all the data in the database tables checked below will be deleted.</p>
+    <form method='post' name='suicide' >
+    <?php wp_nonce_field('commit-suicide'); ?>
+    <p><strong style="color:red;">Warning:</strong> By clicking <button type='submit' name='function' class='button' value='commit suicide' onclick='return confirm("For the love of pete, are you sure?");'>Yes</button> all the data in the database tables checked below will be deleted.</p>
 
     <ul style="list-style-type:none;">
     <li><input type="checkbox" name="delete_posts"              id="delete_posts"              checked="checked" /> <label for="delete_posts"><?php print $wpdb->posts; ?></label></li>
@@ -164,7 +137,3 @@ function commit_suicide()
 
   print "</div>";
 }
-
-
-add_action('admin_menu', 'manage_suicide');
-?>
