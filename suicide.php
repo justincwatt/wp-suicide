@@ -7,6 +7,14 @@ Description: Delete all content from your blog's database (by table). Goto <a hr
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
 
+2.0
+- Security Fix: Fixed nonce so that it is checked properly and will not allow suicide to happen if invalid
+- Bugfix: Renamed plugin function to prevent fatal conflicts with other plugins/core function names
+- Feature: Added ability to suicide all network content on a WordPress Multisite install
+- Upgrade: Moved suicide functions into a Suicide object
+- Users can suicide all network content from Network Admin > Sites > Network Suicide
+- By default the plugin is deactivated after use on an individual site. Stays active at network level
+
 1.5
 Add wp_nonce_field check, minor code cleanup
 
@@ -48,92 +56,184 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 
 */
 
-function manage_suicide() {
-  // Add a new menu under Tools:
-  add_management_page('Suicide', 'Suicide', 'manage_options', __FILE__, 'commit_suicide');
-}
-add_action('admin_menu', 'manage_suicide');
-
-function commit_suicide() 
-{
-  if (!empty($_POST)) {
-    check_admin_referer('commit-suicide');
-  }
-
-  global $wpdb;
-  $tables = array(
-    'posts',
-    'comments',
-    'commentmeta',
-    'links',
-    'postmeta',
-    'term_relationships',
-    'terms',
-    'term_taxonomy',
-    'users',
-    'usermeta',
-    'options'
-  );
-
-  print "<div class='wrap'>";
-  print "<h2>Commit Suicide?</h2>";
-
-  if ($_POST['function'] == 'commit suicide') {
-
-    print "<p><strong>Progress:</strong></p>";
-
-    foreach ($tables as $table) {
-      if (isset($_POST["delete_$table"])) {
-        $wpdb->query("TRUNCATE TABLE {$wpdb->$table}");
-        print "<p>{$wpdb->$table} deleted.</p>";
-      }
+new Suicide();
+class Suicide {
+    
+    /**
+     * List of tables available to suicide
+     * @var Array 
+     */
+    private $tables = array(
+        'posts' => array( 'checked' => true ),
+        'comments' => array( 'checked' => true ),
+        'commentmeta' => array( 'checked' => true ),
+        'links' => array( 'checked' => true ),
+        'postmeta' => array( 'checked' => true ),
+        'term_relationships' => array( 'checked' => true ),
+        'terms' => array( 'checked' => true ),
+        'term_taxonomy' => array( 'checked' => true ),
+        'users' => array( 'checked' => false ),
+        'usermeta' => array( 'checked' => false ),
+        'options' => array( 'checked' => false )
+    );
+    
+    public function __construct() {
+        
+        // Individual site suicide - Tools > Suicide
+        add_action('admin_menu', array( &$this, 'addSubMenu' ) );
+        
+        // Total network suicide - Network Admin > Sites > Network Suicide
+        add_action( 'network_admin_menu', array( &$this, 'addNetworkMenu') );
+        
+        // Let outsiders add more tables to our list
+        apply_filters( 'suicide_tables', $this->tables );
     }
     
-    // deactivate plugin for safety's sake (borrowed from wp-admin/plugins.php)
-    $current = get_option('active_plugins');
-    if (in_array(basename(__FILE__), $current)) {
-      array_splice($current, array_search(basename(__FILE__), $current), 1); // Array-fu!
-      update_option('active_plugins', $current);
-      print "<p><strong>Note:</strong> For your safety (and the safety of others around you), the Suicide plugin has been deactivated. However, you can reactivate it from the <a href='plugins.php'>Plugins</a> interface if you'd like to commit suicide again.</p>";
+    /**
+     * Adds a new menu item under Sites > Network Suicide for suicide of all network content
+     */
+    public function addNetworkMenu() {
+        add_submenu_page( 'sites.php', 'Commit Network Suicide', 'Network Suicide', 'manage_options', __FILE__, array( &$this, 'pageNetworkSuicide') );
     }
-  
-  } else { 
-
-    ?>
     
-    <form method='post' name='suicide' >
-    <?php wp_nonce_field('commit-suicide'); ?>
-    <p><strong style="color:red;">Warning:</strong> By clicking <button type='submit' name='function' class='button' value='commit suicide' onclick='return confirm("For the love of pete, are you sure?");'>Yes</button> all the data in the database tables checked below will be deleted.</p>
-
-    <ul style="list-style-type:none;">
-    <li><input type="checkbox" name="delete_posts"              id="delete_posts"              checked="checked" /> <label for="delete_posts"><?php print $wpdb->posts; ?></label></li>
-    <li><input type="checkbox" name="delete_comments"           id="delete_comments"           checked="checked" /> <label for="delete_comments"><?php print $wpdb->comments; ?></label></li>
-    <li><input type="checkbox" name="delete_commentmeta"        id="delete_commentmeta"        checked="checked" /> <label for="delete_commentmeta"><?php print $wpdb->commentmeta; ?></label></li>    
-    <li><input type="checkbox" name="delete_links"              id="delete_links"              checked="checked" /> <label for="delete_links"><?php print $wpdb->links; ?></label></li>
-    <li><input type="checkbox" name="delete_postmeta"           id="delete_postmeta"           checked="checked" /> <label for="delete_postmeta"><?php print $wpdb->postmeta;?> (custom fields)</label></li>
-    <li><input type="checkbox" name="delete_term_relationships" id="delete_term_relationships" checked="checked" /> <label for="delete_term_relationships"><?php print $wpdb->term_relationships; ?></label></li>
-    </ul>
-
-    <p>Uncheck the following checkboxes if you want to preserve your categories and tags:</p>
+    /**
+     * Show the page for network suicide
+     * @global type $wpdb 
+     */
+    public function pageNetworkSuicide() {
+        global $wpdb;
+        
+        $blogs = $this->blogList();
+        
+        if( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
+            if( isset( $_POST['all_sites'] ) ) {
+                $b = $this->blogList();
+            } else {
+                $temp = array();
+                foreach( $_POST['blogs'] AS $b ) {
+                     $temp[$b] = $blogs[$b];
+                }
+                $blogs = $temp;
+            }
+            
+            // Remove each blogs contents
+            foreach( $blogs AS $blog_id => $domain ) {
+                echo "<h1>$domain</h1>";
+                $this->do_suicide( $blog_id );
+                $this->reveal_suicide();
+            }
+           
+        } else {
+            global $wpdb;
+            require_once( 'network-suicide-form.php' );
+        }
+    }
     
-    <ul style="list-style-type:none;">
-    <li><input type="checkbox" name="delete_terms"         id="delete_terms"         checked="checked" /> <label for="delete_terms"><?php print $wpdb->terms; ?></label></li>
-    <li><input type="checkbox" name="delete_term_taxonomy" id="delete_term_taxonomy" checked="checked" /> <label for="delete_term_taxonomy"><?php print $wpdb->term_taxonomy; ?></label></li>
-    </ul>
+    /**
+     * Grab a listing of all the blogs on this install in a usable/searchable format
+     * @global WPDB $wpdb
+     * @return Array 
+     */
+    private function blogList() {
+        global $wpdb;
+        $blogs = $wpdb->get_results("
+                    SELECT blog_id, domain
+                    FROM {$wpdb->blogs}
+                    WHERE site_id = '{$wpdb->siteid}'
+                    AND spam = '0'
+                    AND deleted = '0'
+                    AND archived = '0'
+                    AND blog_id != 1
+                ");
+         $sites = array();
+         foreach( $blogs AS $b ) {
+             $sites[$b->blog_id] = $b->domain;
+         }
+         return $sites; 
+    }
+    
+    /**
+     * Adds a new menu item under Tools > Suicide for individual site suicide 
+     */
+    public function addSubMenu() {
+        add_management_page('Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'pageCommitSuicide' ) );
+    }
+    
+    /**
+     * Show the page for the individual site suicide
+     * @global type $wpdb 
+     */
+    public function pageCommitSuicide() {
+        global $wpdb;
 
-    <p>By sparing the data in the following tables, you will be left with a functional, though empty WordPress install:</p>
+        if( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
+            $this->do_suicide();
+            $this->reveal_suicide();
+        } else {
+            require_once( 'suicide-form.php' );
+        }
+    }
+    
 
-    <ul style="list-style-type:none;">
-    <li><input type="checkbox" name="delete_users"    id="delete_users"    /> <label for="delete_users"><?php print $wpdb->users; ?></label></li>
-    <li><input type="checkbox" name="delete_usermeta" id="delete_usermeta" /> <label for="delete_usermeta"><?php print $wpdb->usermeta; ?></label></li>
-    <li><input type="checkbox" name="delete_options"  id="delete_options"  /> <label for="delete_options"><?php print $wpdb->options; ?></label></li>
-    </ul>
+    /**
+     * Show which tables were emptied 
+     */
+    private function reveal_suicide() {
+        ?>
+        <div class='wrap'>
+            <h2>Suicide Results</h2>
+                <b>Records removed from:</b><ul>
+                    <?php
+                foreach( array_keys( $this->tables ) AS $table ) {
+                    if (isset($_POST["delete_$table"])) {
+                        echo "<li>$table</li>";
+                    }
+                }
+                ?>
+                </ul>
+        </div>
+        <?php
+    }
+    
+    
+    /**
+     * Perform the suicidal operation. If a blog ID is not passed in the current
+     * blog will be used
+     * 
+     * @param Integer $blog_id 
+     */
+    private function do_suicide( $blog_id = null ) {
+        global $wpdb;
+      
+        // Security check for valid user action
+        if( !check_admin_referer('commit-suicide') ) 
+            return false;
+        
+        if( !is_null( $blog_id ) ) 
+            switch_to_blog ( $blog_id );
+        // Loop through the set of tables to possibly empty. 
+        foreach( array_keys( $this->tables ) AS $table ) {
+            if (isset($_POST["delete_$table"])) {
+                $wpdb->query("TRUNCATE TABLE {$wpdb->$table}");
+            }
+        }
+        
+        if( !is_null( $blog_id ) )
+            restore_current_blog ();
+        
+     //   echo '<pre>'; var_dump($_POST); echo '</pre>';
+        if( isset( $_POST['prevent_further_suicide'] ) ) {
+             $this->prevent_suicide();
+        }
+    }
+    
+    /**
+     * Deactivates the plugin. To use again the user must reactivate through
+     * the Plugins page 
+     */
+    private function prevent_suicide() {
+        deactivate_plugins( __FILE__, true ); // Omitting 3rd option to only turn off on this site
+    }
+} // end class
 
-    <p><strong>Use with extreme caution!</strong> The author of this plugin assumes no liability whatsoever for the destructive effects of its use.</p>
-    </form>
 
-    <?php
-  }
-
-  print "</div>";
-}
