@@ -1,5 +1,5 @@
 === Suicide ===
-Contributors: justinwatts, blobaugh
+Contributors: justincwatts, blobaugh
 Tags: suicide, remove content, wipe database, multisite
 Requires at least: 3.0
 Tested up to: 3.4.1
