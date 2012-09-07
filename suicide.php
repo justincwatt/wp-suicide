@@ -64,23 +64,23 @@ class Suicide {
      * @var Array 
      */
     private $tables = array(
-        'posts' => array( 'checked' => true ),
-        'comments' => array( 'checked' => true ),
-        'commentmeta' => array( 'checked' => true ),
-        'links' => array( 'checked' => true ),
-        'postmeta' => array( 'checked' => true ),
+        'posts'              => array( 'checked' => true ),
+        'comments'           => array( 'checked' => true ),
+        'commentmeta'        => array( 'checked' => true ),
+        'links'              => array( 'checked' => true ),
+        'postmeta'           => array( 'checked' => true ),
         'term_relationships' => array( 'checked' => true ),
-        'terms' => array( 'checked' => true ),
-        'term_taxonomy' => array( 'checked' => true ),
-        'users' => array( 'checked' => false ),
-        'usermeta' => array( 'checked' => false ),
-        'options' => array( 'checked' => false )
+        'terms'              => array( 'checked' => true ),
+        'term_taxonomy'      => array( 'checked' => true ),
+        'users'              => array( 'checked' => false ),
+        'usermeta'           => array( 'checked' => false ),
+        'options'            => array( 'checked' => false )
     );
     
     public function __construct() {
         
         // Individual site suicide - Tools > Suicide
-        add_action('admin_menu', array( &$this, 'add_sub_menu' ) );
+        add_action( 'admin_menu', array( &$this, 'add_sub_menu' ) );
         
         // Total network suicide - Network Admin > Sites > Network Suicide
         add_action( 'network_admin_menu', array( &$this, 'add_network_menu') );
@@ -105,8 +105,8 @@ class Suicide {
         
         $blogs = $this->blog_list();
         
-        if( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
-            if( isset( $_POST['all_sites'] ) ) {
+        if ( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
+            if ( isset( $_POST['all_sites'] ) ) {
                 $b = $this->blog_list();
             } else {
                 $temp = array();
@@ -117,7 +117,7 @@ class Suicide {
             }
             
             // Remove each blogs contents
-            foreach( $blogs AS $blog_id => $domain ) {
+            foreach ( $blogs AS $blog_id => $domain ) {
                 echo "<h1>$domain</h1>";
                 $this->do_suicide( $blog_id );
                 $this->reveal_suicide();
@@ -146,7 +146,7 @@ class Suicide {
                     AND blog_id != 1
                 ");
          $sites = array();
-         foreach( $blogs AS $b ) {
+         foreach ( $blogs AS $b ) {
              $sites[$b->blog_id] = $b->domain;
          }
          return $sites; 
@@ -156,7 +156,7 @@ class Suicide {
      * Adds a new menu item under Tools > Suicide for individual site suicide 
      */
     public function add_sub_menu() {
-        add_management_page('Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'page_commit_suicide' ) );
+        add_management_page( 'Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'page_commit_suicide' ) );
     }
     
     /**
@@ -166,7 +166,7 @@ class Suicide {
     public function page_commit_suicide() {
         global $wpdb;
 
-        if( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
+        if ( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
             $this->do_suicide();
             $this->reveal_suicide();
         } else {
@@ -184,8 +184,8 @@ class Suicide {
             <h2>Suicide Results</h2>
                 <b>Records removed from:</b><ul>
                     <?php
-                foreach( array_keys( $this->tables ) AS $table ) {
-                    if (isset($_POST["delete_$table"])) {
+                foreach ( array_keys( $this->tables ) AS $table ) {
+                    if ( isset($_POST["delete_$table"] ) ) {
                         echo "<li>$table</li>";
                     }
                 }
@@ -206,23 +206,23 @@ class Suicide {
         global $wpdb;
       
         // Security check for valid user action
-        if( !check_admin_referer('commit-suicide') ) 
+        if ( !check_admin_referer('commit-suicide') ) 
             return false;
         
-        if( !is_null( $blog_id ) ) 
+        if ( !is_null( $blog_id ) ) 
             switch_to_blog ( $blog_id );
         // Loop through the set of tables to possibly empty. 
-        foreach( array_keys( $this->tables ) AS $table ) {
-            if (isset($_POST["delete_$table"])) {
-                $wpdb->query("TRUNCATE TABLE {$wpdb->$table}");
+        foreach ( array_keys( $this->tables ) AS $table ) {
+            if ( isset( $_POST["delete_$table"] ) ) {
+                $wpdb->query( "TRUNCATE TABLE {$wpdb->$table}" );
             }
         }
         
-        if( !is_null( $blog_id ) )
-            restore_current_blog ();
+        if ( !is_null( $blog_id ) )
+            restore_current_blog();
         
      //   echo '<pre>'; var_dump($_POST); echo '</pre>';
-        if( isset( $_POST['prevent_further_suicide'] ) ) {
+        if ( isset( $_POST['prevent_further_suicide'] ) ) {
              $this->prevent_suicide();
         }
     }
