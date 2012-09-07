@@ -80,10 +80,10 @@ class Suicide {
     public function __construct() {
         
         // Individual site suicide - Tools > Suicide
-        add_action('admin_menu', array( &$this, 'addSubMenu' ) );
+        add_action('admin_menu', array( &$this, 'add_sub_menu' ) );
         
         // Total network suicide - Network Admin > Sites > Network Suicide
-        add_action( 'network_admin_menu', array( &$this, 'addNetworkMenu') );
+        add_action( 'network_admin_menu', array( &$this, 'add_network_menu') );
         
         // Let outsiders add more tables to our list
         apply_filters( 'suicide_tables', $this->tables );
@@ -92,22 +92,22 @@ class Suicide {
     /**
      * Adds a new menu item under Sites > Network Suicide for suicide of all network content
      */
-    public function addNetworkMenu() {
-        add_submenu_page( 'sites.php', 'Commit Network Suicide', 'Network Suicide', 'manage_options', __FILE__, array( &$this, 'pageNetworkSuicide') );
+    public function add_network_menu() {
+        add_submenu_page( 'sites.php', 'Commit Network Suicide', 'Network Suicide', 'manage_options', __FILE__, array( &$this, 'page_network_suicide') );
     }
     
     /**
      * Show the page for network suicide
      * @global type $wpdb 
      */
-    public function pageNetworkSuicide() {
+    public function page_network_suicide() {
         global $wpdb;
         
-        $blogs = $this->blogList();
+        $blogs = $this->blog_list();
         
         if( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
             if( isset( $_POST['all_sites'] ) ) {
-                $b = $this->blogList();
+                $b = $this->blog_list();
             } else {
                 $temp = array();
                 foreach( $_POST['blogs'] AS $b ) {
@@ -134,7 +134,7 @@ class Suicide {
      * @global WPDB $wpdb
      * @return Array 
      */
-    private function blogList() {
+    private function blog_list() {
         global $wpdb;
         $blogs = $wpdb->get_results("
                     SELECT blog_id, domain
@@ -155,15 +155,15 @@ class Suicide {
     /**
      * Adds a new menu item under Tools > Suicide for individual site suicide 
      */
-    public function addSubMenu() {
-        add_management_page('Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'pageCommitSuicide' ) );
+    public function add_sub_menu() {
+        add_management_page('Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'page_commit_suicide' ) );
     }
     
     /**
      * Show the page for the individual site suicide
      * @global type $wpdb 
      */
-    public function pageCommitSuicide() {
+    public function page_commit_suicide() {
         global $wpdb;
 
         if( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
