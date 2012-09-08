@@ -7,32 +7,6 @@ Description: Delete all content from your blog's database (by table). Goto <a hr
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
 
-2.0
-- Security Fix: Fixed nonce so that it is checked properly and will not allow suicide to happen if invalid
-- Bugfix: Renamed plugin function to prevent fatal conflicts with other plugins/core function names
-- Feature: Added ability to suicide all network content on a WordPress Multisite install
-- Upgrade: Moved suicide functions into a Suicide object
-- Users can suicide all network content from Network Admin > Sites > Network Suicide
-- By default the plugin is deactivated after use on an individual site. Stays active at network level
-
-1.5
-Add wp_nonce_field check, minor code cleanup
-
-1.4
-updated for WordPress 2.9 (wp_commentmeta table added)
-
-1.3
-deactivate wp-suicide after running (thanks Steven!)
-
-1.2
-updated for WordPress 2.3 (post2cat and link2cat became wp_term_relationships, and categories became terms and term_taxonmy)
-
-1.1
-updated for WordPress 2.1 (linkcategories table renamed link2cat)
-
-1.0
-initial version
-
 LICENSE
 
 wp-suicide.php
@@ -78,21 +52,42 @@ class Suicide {
 	);
 	
 	public function __construct() {
-		
 		// Individual site suicide - Tools > Suicide
-		add_action( 'admin_menu', array( &$this, 'add_sub_menu' ) );
+		add_action( 'admin_menu', array( &$this, 'add_admin_menu' ) );
 		
 		// Total network suicide - Network Admin > Sites > Network Suicide
-		add_action( 'network_admin_menu', array( &$this, 'add_network_menu') );
+		add_action( 'network_admin_menu', array( &$this, 'add_network_admin_menu') );
 		
 		// Let outsiders add more tables to our list
 		apply_filters( 'suicide_tables', $this->tables );
+	}
+
+	/**
+	 * Adds a new menu item under Tools > Suicide for individual site suicide
+	 */
+	public function add_admin_menu() {
+		add_management_page( 'Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'page_single_suicide' ) );
+	}
+	
+	/**
+	 * Show the page for the individual site suicide
+	 * @global type $wpdb
+	 */
+	public function page_single_suicide() {
+		global $wpdb;
+
+		if ( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
+			$this->do_suicide();
+			$this->reveal_suicide();
+		} else {
+			require_once( 'suicide-form.php' );
+		}
 	}
 	
 	/**
 	 * Adds a new menu item under Sites > Network Suicide for suicide of all network content
 	 */
-	public function add_network_menu() {
+	public function add_network_admin_menu() {
 		add_submenu_page( 'sites.php', 'Commit Network Suicide', 'Network Suicide', 'manage_options', __FILE__, array( &$this, 'page_network_suicide') );
 	}
 	
@@ -116,7 +111,7 @@ class Suicide {
 				$blogs = $temp;
 			}
 			
-			// Remove each blogs contents
+			// Remove each blog's contents
 			foreach ( $blogs AS $blog_id => $domain ) {
 				echo "<h1>$domain</h1>";
 				$this->do_suicide( $blog_id );
@@ -124,7 +119,6 @@ class Suicide {
 			}
 		
 		} else {
-			global $wpdb;
 			require_once( 'network-suicide-form.php' );
 		}
 	}
@@ -151,29 +145,6 @@ class Suicide {
 		}
 		return $sites;
 	}
-	
-	/**
-	 * Adds a new menu item under Tools > Suicide for individual site suicide
-	 */
-	public function add_sub_menu() {
-		add_management_page( 'Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'page_commit_suicide' ) );
-	}
-	
-	/**
-	 * Show the page for the individual site suicide
-	 * @global type $wpdb
-	 */
-	public function page_commit_suicide() {
-		global $wpdb;
-
-		if ( isset( $_POST['function'] ) && $_POST['function'] == 'commit-suicide' ) {
-			$this->do_suicide();
-			$this->reveal_suicide();
-		} else {
-			require_once( 'suicide-form.php' );
-		}
-	}
-	
 
 	/**
 	 * Show which tables were emptied
@@ -195,7 +166,6 @@ class Suicide {
 		<?php
 	}
 	
-	
 	/**
 	 * Perform the suicidal operation. If a blog ID is not passed in the current
 	 * blog will be used
@@ -211,6 +181,7 @@ class Suicide {
 		
 		if ( !is_null( $blog_id ) )
 			switch_to_blog ( $blog_id );
+
 		// Loop through the set of tables to possibly empty.
 		foreach ( array_keys( $this->tables ) AS $table ) {
 			if ( isset( $_POST["delete_$table"] ) ) {
@@ -219,9 +190,8 @@ class Suicide {
 		}
 		
 		if ( !is_null( $blog_id ) )
-			restore_current_blog();
+			restore_current_blog(); // defined in wp-includes/ms-blogs.php
 		
-        //echo '<pre>'; var_dump($_POST); echo '</pre>';
 		if ( isset( $_POST['prevent_further_suicide'] ) ) {
 			$this->prevent_suicide();
 		}
@@ -235,5 +205,3 @@ class Suicide {
 		deactivate_plugins( __FILE__, true ); // Omitting 3rd option to only turn off on this site
 	}
 } // end class
-
-
