@@ -3,7 +3,7 @@
 Plugin Name: Suicide
 Version: 2.0
 Plugin URI: http://justinsomnia.org/2006/04/wordpress-suicide/
-Description: Delete all content from your blog's database (by table). Goto <a href="tools.php?page=suicide.php">Tools &gt; Suicide</a> to operate.
+Description: Delete all content from your blog's database (by table). Goto <a href="tools.php?page=suicide">Tools &gt; Suicide</a> to operate.
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
 
@@ -66,7 +66,7 @@ class Suicide {
 	 * Adds a new menu item under Tools > Suicide for individual site suicide
 	 */
 	public function add_admin_menu() {
-		add_management_page( 'Commit Suicide', ' Suicide', 'manage_options', __FILE__, array( &$this, 'page_single_suicide' ) );
+		add_management_page( 'Commit Suicide', ' Suicide', 'manage_options', 'suicide', array( &$this, 'page_single_suicide' ) );
 	}
 	
 	/**
@@ -88,7 +88,7 @@ class Suicide {
 	 * Adds a new menu item under Sites > Network Suicide for suicide of all network content
 	 */
 	public function add_network_admin_menu() {
-		add_submenu_page( 'sites.php', 'Commit Network Suicide', 'Network Suicide', 'manage_options', __FILE__, array( &$this, 'page_network_suicide') );
+		add_submenu_page( 'sites.php', 'Commit Network Suicide', 'Network Suicide', 'manage_options', 'suicide', array( &$this, 'page_network_suicide') );
 	}
 	
 	/**
