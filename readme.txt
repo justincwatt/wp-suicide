@@ -1,6 +1,6 @@
 === Suicide ===
 Contributors: justincwatt, blobaugh
-Donate link: http://justinsomnia.org/about/
+Donate link: http://justinsomnia.org/2006/04/wordpress-suicide/
 Tags: suicide, remove content, database, multisite, development, admin
 Requires at least: 3.0
 Tested up to: 3.4.1
