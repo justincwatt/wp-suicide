@@ -3,16 +3,12 @@
 Plugin Name: Suicide
 Version: 2.0
 Plugin URI: http://justinsomnia.org/2006/04/wordpress-suicide/
-Description: Delete all content from your blog's database (by table). Goto <a href="tools.php?page=suicide">Tools &gt; Suicide</a> to operate.
+Description: Delete all content from your blog's database (by table). Go to <a href="tools.php?page=suicide">Tools &gt; Suicide</a> (and contemplate your blogging fate).
 Author: Justin Watt
 Author URI: http://justinsomnia.org/
 
 LICENSE
-
-wp-suicide.php
-Copyright (C) 2012 Justin Watt
-justincwatt@gmail.com
-http://justinsomnia.org/
+Copyright 2012 Justin Watt justincwatt@gmail.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -53,10 +49,10 @@ class Suicide {
 	
 	public function __construct() {
 		// Individual site suicide - Tools > Suicide
-		add_action( 'admin_menu', array( &$this, 'add_admin_menu' ) );
+		add_action( 'admin_menu', array( $this, 'add_admin_menu' ) );
 		
 		// Total network suicide - Network Admin > Sites > Network Suicide
-		add_action( 'network_admin_menu', array( &$this, 'add_network_admin_menu') );
+		add_action( 'network_admin_menu', array( $this, 'add_network_admin_menu') );
 		
 		// Let outsiders add more tables to our list
 		apply_filters( 'suicide_tables', $this->tables );
@@ -66,7 +62,7 @@ class Suicide {
 	 * Adds a new menu item under Tools > Suicide for individual site suicide
 	 */
 	public function add_admin_menu() {
-		add_management_page( 'Commit Suicide', ' Suicide', 'manage_options', 'suicide', array( &$this, 'page_single_suicide' ) );
+		add_management_page( 'Commit Suicide', ' Suicide', 'manage_options', 'suicide', array( $this, 'page_single_suicide' ) );
 	}
 	
 	/**
