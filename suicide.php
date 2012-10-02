@@ -152,7 +152,7 @@ class Suicide {
 				<b>Records removed from:</b><ul>
 					<?php
 				foreach ( array_keys( $this->tables ) AS $table ) {
-					if ( isset($_POST["delete_$table"] ) ) {
+					if ( isset( $_POST["delete_$table"] ) ) {
 						echo "<li>$table</li>";
 					}
 				}
@@ -172,7 +172,7 @@ class Suicide {
 		global $wpdb;
 	
 		// Security check for valid user action
-		if ( !check_admin_referer('commit-suicide') )
+		if ( !check_admin_referer( 'commit-suicide' ) )
 			return false;
 		
 		if ( !is_null( $blog_id ) )
