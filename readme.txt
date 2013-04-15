@@ -18,6 +18,9 @@ To use simply install and visit the Tools > Suicide page.
 
 For multisite installs of WordPress visit Network Admin > Sites > Network Suicide to choose which sites you would like to remove content from.
 
+If you're interested in contributing to the code behind this plugin, it's also hosted on GitHub:
+https://github.com/justincwatt/wp-suicide
+
 == Installation ==
 
 Extract the zip file and just drop the contents in the wp-content/plugins/ directory of your WordPress installation and then activate the Plugin from Plugins page.
