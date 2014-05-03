@@ -1,7 +1,7 @@
 <?php
 /*
 Plugin Name: Suicide
-Version: 1.5
+Version: 1.5.1
 Plugin URI: http://justinsomnia.org/2006/04/wordpress-suicide/
 Description: Delete all content from your blog's database (by table). Goto <a href="tools.php?page=suicide.php">Tools &gt; Suicide</a> to operate.
 Author: Justin Watt
